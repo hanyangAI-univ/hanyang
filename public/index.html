@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Pulse - 실시간 종합 현황판</title>
+    <!-- TradingView Widget Script -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-card: #151c2c;
+            --bg-card-hover: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --border-color: #26334d;
+            --modal-bg: rgba(11, 15, 25, 0.88);
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        body.light-mode {
+            --bg-primary: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f8fafc;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --accent-green: #059669;
+            --accent-red: #dc2626;
+            --accent-blue: #2563eb;
+            --border-color: #e2e8f0;
+            --modal-bg: rgba(241, 245, 249, 0.88);
+            --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            transition: background-color 0.25s, color 0.25s, border-color 0.25s;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 24px 20px 40px 20px;
+            min-height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(16, 185, 129, 0.2));
+            padding: 8px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .logo-text {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 9px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .btn:hover {
+            background-color: var(--bg-card-hover);
+            border-color: var(--accent-blue);
+        }
+
+        /* Section Titles */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 28px 0 14px 0;
+        }
+
+        .section-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 16px;
+            background-color: var(--accent-blue);
+            border-radius: 2px;
+        }
+
+        /* Grid Layouts */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 18px;
+            cursor: pointer;
+            position: relative;
+            box-shadow: var(--card-shadow);
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-blue);
+            background-color: var(--bg-card-hover);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .card-symbol {
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+
+        .tag {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .tag-blue { background-color: rgba(59, 130, 246, 0.15); color: var(--accent-blue); border: 1px solid rgba(59, 130, 246, 0.3); }
+        .tag-green { background-color: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3); }
+
+        /* Watchlist Add Input */
+        .add-stock-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        .add-stock-input {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            outline: none;
+            width: 220px;
+        }
+
+        .add-stock-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--accent-red);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card:hover .delete-btn {
+            display: flex;
+        }
+
+        /* IPO Grid */
+        .ipo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 14px;
+        }
+
+        .ipo-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 20px;
+            cursor: pointer;
+            box-shadow: var(--card-shadow);
+        }
+
+        .ipo-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-green);
+            background-color: var(--bg-card-hover);
+        }
+
+        .ipo-details {
+            margin-top: 12px;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--modal-bg);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 92%;
+            max-width: 950px;
+            height: 82vh;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .modal-body {
+            flex: 1;
+            margin-top: 20px;
+            overflow-y: auto;
+        }
+
+        /* Detail Table */
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .detail-table th, .detail-table td {
+            padding: 14px 18px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .detail-table th {
+            background-color: var(--bg-primary);
+            color: var(--text-secondary);
+            font-weight: 600;
+            width: 32%;
+        }
+
+        .detail-table td {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Responsive Mobile Layout */
+        @media (max-width: 768px) {
+            body { padding: 16px 12px; }
+            .dashboard-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .ipo-grid { grid-template-columns: 1fr; }
+            .section-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .add-stock-form { width: 100%; }
+            .add-stock-input { flex: 1; }
+            .modal-content { width: 96%; height: 88vh; padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="logo-container">
+            <div class="logo-icon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+            </div>
+            <span class="logo-text">Market Pulse</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn" id="refresh-btn" onclick="fetchIpoData()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                새로고침
+            </button>
+            <button class="btn" id="theme-toggle" onclick="toggleTheme()">
+                <span id="theme-icon">🌙</span> 다크모드
+            </button>
+        </div>
+    </header>
+
+    <!-- Line 1: Forex -->
+    <div class="section-header">
+        <div class="section-title">1. 주요 환율 (Real-time Forex)</div>
+    </div>
+    <div class="dashboard-grid" id="forex-grid"></div>
+
+    <!-- Line 2: Market Indices & ETFs -->
+    <div class="section-header">
+        <div class="section-title">2. 시장 지수 · ETF (Market Indices)</div>
+    </div>
+    <div class="dashboard-grid" id="index-grid"></div>
+
+    <!-- Line 3: Watchlist -->
+    <div class="section-header">
+        <div class="section-title">3. 관심 종목 (Watchlist)</div>
+        <div class="add-stock-form">
+            <input type="text" id="stock-name-input" class="add-stock-input" placeholder="종목명/티커 입력 (예: 삼성전자)">
+            <button class="btn" onclick="addCustomStock()">+ 추가</button>
+        </div>
+    </div>
+    <div class="dashboard-grid" id="watchlist-grid"></div>
+
+    <!-- Line 4: IPO Schedule -->
+    <div class="section-header">
+        <div class="section-title">4. IPO 공모주 일정 (7일 이내 청약/상장)</div>
+    </div>
+    <div class="ipo-grid" id="ipo-grid">
+        <div class="ipo-card">38커뮤니케이션 / KIND 실시간 데이터를 연동하는 중입니다...</div>
+    </div>
+
+    <!-- Modal for TradingView & IPO Details -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <h2 id="modal-title" style="font-size: 1.3rem; color: var(--text-primary);">상세 정보</h2>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Core Data Mappings
+        const forexData = [
+            { name: "달러 인덱스", symbol: "CAPITALCOM:DXY", displaySymbol: "DXY" },
+            { name: "달러-원화", symbol: "FX_IDC:USDKRW", displaySymbol: "USD/KRW" },
+            { name: "유로-원화", symbol: "FX_IDC:EURKRW", displaySymbol: "EUR/KRW" },
+            { name: "엔-원화", symbol: "FX_IDC:JPYKRW", displaySymbol: "100JPY/KRW" },
+            { name: "파운드-원화", symbol: "FX_IDC:GBPKRW", displaySymbol: "GBP/KRW" },
+            { name: "위안-원화", symbol: "FX_IDC:CNYKRW", displaySymbol: "CNY/KRW" }
+        ];
+
+        const indexData = [
+            { name: "코스피", symbol: "KRX:KOSPI", displaySymbol: "KOSPI" },
+            { name: "코스닥", symbol: "KRX:KOSDAQ", displaySymbol: "KOSDAQ" },
+            { name: "VOO (S&P500)", symbol: "AMEX:VOO", displaySymbol: "VOO" },
+            { name: "QQQ (나스닥100)", symbol: "NASDAQ:QQQ", displaySymbol: "QQQ" }
+        ];
+
+        // Watchlist with LocalStorage
+        let watchlist = JSON.parse(localStorage.getItem('mp_watchlist')) || [
+            { name: "HMM", symbol: "KRX:011200", displaySymbol: "011200" },
+            { name: "현대제철", symbol: "KRX:004020", displaySymbol: "004020" }
+        ];
+
+        let rawIpoData = [];
+
+        // 2. Initialization
+        window.onload = () => {
+            renderGrid('forex-grid', forexData);
+            renderGrid('index-grid', indexData);
+            renderWatchlist();
+            fetchIpoData();
+        };
+
+        // Render Cards
+        function renderGrid(elementId, items) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = items.map(item => `
+                <div class="card" onclick="openTradingViewModal('${item.symbol}', '${item.name}')">
+                    <div class="card-header">
+                        <span class="card-title">${item.name}</span>
+                        <span class="tag tag-blue">차트</span>
+                    </div>
+                    <div class="card-symbol">${item.displaySymbol}</div>
+                </div>
+            `).join('');
+        }
+
+        // Watchlist Functions
+        function renderWatchlist() {
+            const container = document.getElementById('watchlist-grid');
+            container.innerHTML = watchlist.map((item, index) => `
+                <div class="card" onclick="openTradingViewModal('${item.symbol}', '${item.name}')">
+                    <button class="delete-btn" onclick="event.stopPropagation(); removeStock(${index});">✕</button>
+                    <div class="card-header">
+                        <span class="card-title">${item.name}</span>
+                        <span class="tag tag-green">관심</span>
+                    </div>
+                    <div class="card-symbol">${item.displaySymbol}</div>
+                </div>
+            `).join('');
+            localStorage.setItem('mp_watchlist', JSON.stringify(watchlist));
+        }
+
+        function addCustomStock() {
+            const input = document.getElementById('stock-name-input');
+            const name = input.value.trim();
+            if (!name) return;
+
+            let symbol = "KRX:" + name;
+            let displaySymbol = name;
+
+            // Common stock name mappings
+            const stockMap = {
+                "삼성전자": "005930",
+                "SK하이닉스": "000660",
+                "NAVER": "035420",
+                "카카오": "035720",
+                "현대차": "005380",
+                "LG에너지솔루션": "373220",
+                "테슬라": "NASDAQ:TSLA",
+                "엔비디아": "NASDAQ:NVDA",
+                "애플": "NASDAQ:AAPL"
+            };
+
+            if (stockMap[name]) {
+                if (stockMap[name].startsWith("NASDAQ:") || stockMap[name].startsWith("NYSE:")) {
+                    symbol = stockMap[name];
+                    displaySymbol = stockMap[name].split(':')[1];
+                } else {
+                    symbol = "KRX:" + stockMap[name];
+                    displaySymbol = stockMap[name];
+                }
+            } else if (/^\d{6}$/.test(name)) {
+                symbol = "KRX:" + name;
+                displaySymbol = name;
+            }
+
+            watchlist.push({ name, symbol, displaySymbol });
+            renderWatchlist();
+            input.value = '';
+        }
+
+        function removeStock(index) {
+            watchlist.splice(index, 1);
+            renderWatchlist();
+        }
+
+        // 3. Fetch IPO Serverless API
+        async function fetchIpoData() {
+            const container = document.getElementById('ipo-grid');
+            container.innerHTML = '<div class="ipo-card">38커뮤니케이션 / KIND 실시간 수신 중...</div>';
+
+            try {
+                const response = await fetch('/api/ipo');
+                const result = await response.json();
+
+                if (result.success && result.data && result.data.length > 0) {
+                    rawIpoData = result.data;
+                    renderIpoCards(result.data);
+                } else {
+                    container.innerHTML = '<div class="ipo-card">현재 7일 이내 예정된 공모주 일정이 없습니다.</div>';
+                }
+            } catch (err) {
+                console.warn("API 호출 실패, 안전 목업 모드로 전환합니다:", err);
+                renderIpoFallback();
+            }
+        }
+
+        function renderIpoCards(data) {
+            const container = document.getElementById('ipo-grid');
+            container.innerHTML = data.map(ipo => `
+                <div class="ipo-card" onclick="openIpoModal('${ipo.id}')">
+                    <div class="card-header">
+                        <span style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">${ipo.name}</span>
+                        <span class="tag tag-green">${ipo.status}</span>
+                    </div>
+                    <div class="ipo-details">
+                        📅 <strong>청약기간:</strong> ${ipo.subPeriod}<br>
+                        🏦 <strong>주관사:</strong> ${ipo.leadUnderwriter}<br>
+                        💰 <strong>공모가:</strong> ${ipo.finalPrice}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderIpoFallback() {
+            rawIpoData = [
+                { id: "fallback-1", name: "케이뱅크", subPeriod: "2026.08.04~08.05", finalPrice: "12,000원", bandPrice: "9,500원 ~ 12,000원", compRatio: "1,680 : 1", lockupRatio: "34.2%", leadUnderwriter: "NH투자증권, KB증권", status: "D-2" },
+                { id: "fallback-2", name: "에이치엔에스하이텍", subPeriod: "2026.08.06~08.07", finalPrice: "18,000원", bandPrice: "15,000원 ~ 18,000원", compRatio: "1,120 : 1", lockupRatio: "22.5%", leadUnderwriter: "미래에셋증권", status: "D-4" },
+                { id: "fallback-3", name: "더본코리아", subPeriod: "2026.08.08~08.09", finalPrice: "34,000원", bandPrice: "28,000원 ~ 34,000원", compRatio: "1,940 : 1", lockupRatio: "41.8%", leadUnderwriter: "한국투자증권, NH투자증권", status: "D-6" }
+            ];
+            renderIpoCards(rawIpoData);
+        }
+
+        // 4. Modals
+        function openTradingViewModal(symbol, name) {
+            document.getElementById('modal-title').innerText = `${name} (${symbol}) TradingView 실시간 차트`;
+            document.getElementById('modal-body').innerHTML = `<div id="tv_chart_container" style="height: 100%; width: 100%;"></div>`;
+            document.getElementById('modal').style.display = 'flex';
+
+            new TradingView.widget({
+                "autosize": true,
+                "symbol": symbol,
+                "interval": "D",
+                "timezone": "Asia/Seoul",
+                "theme": document.body.classList.contains('light-mode') ? "light" : "dark",
+                "style": "1",
+                "locale": "kr",
+                "enable_publishing": false,
+                "allow_symbol_change": true,
+                "container_id": "tv_chart_container"
+            });
+        }
+
+        function openIpoModal(ipoId) {
+            const ipo = rawIpoData.find(item => item.id === ipoId);
+            if (!ipo) return;
+
+            document.getElementById('modal-title').innerText = `${ipo.name} 공모 상세 현황 (38커뮤니케이션 / KIND 공시)`;
+            document.getElementById('modal-body').innerHTML = `
+                <table class="detail-table">
+                    <tr><th>공모 기업명</th><td><strong>${ipo.name}</strong></td></tr>
+                    <tr><th>청약 일정</th><td>${ipo.subPeriod}</td></tr>
+                    <tr><th>확정 공모가</th><td><strong style="color: var(--accent-green); font-size: 1.05rem;">${ipo.finalPrice}</strong></td></tr>
+                    <tr><th>희망 공모가 밴드</th><td>${ipo.bandPrice}</td></tr>
+                    <tr><th>기관 청약 경쟁률</th><td>${ipo.compRatio}</td></tr>
+                    <tr><th>의무보유 확약비율</th><td><strong style="color: var(--accent-blue);">${ipo.lockupRatio}</strong></td></tr>
+                    <tr><th>주간 증권사</th><td>${ipo.leadUnderwriter}</td></tr>
+                    <tr><th>청약 상태</th><td><span class="tag tag-green">${ipo.status}</span></td></tr>
+                </table>
+            `;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+            document.getElementById('modal-body').innerHTML = '';
+        }
+
+        // 5. Theme Toggle
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            document.getElementById('theme-icon').innerText = isLight ? '☀️' : '🌙';
+            document.getElementById('theme-toggle').childNodes[1].nodeValue = isLight ? ' 라이트모드' : ' 다크모드';
+        }
+    </script>
+</body>
+</html>
